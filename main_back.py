@@ -17,10 +17,11 @@ WINDOW_NAME = 'Neural Network Wizard'
 MAXIMIZE_WINDOW = False
 ABOUT_INFORMATION = '''Neural Network Wizard. 2021'''
 RESIZEABLE_FLAG = True
-TOOLBARS_PATH = 'tools'
+#TOOLBARS_PATH = 'tools'
 TOP_MENU = {'file_menu': ['File','Exit'],
             'help_menu': ['Help','About']}
 
+'''
 toolbars = os.listdir(TOOLBARS_PATH)
 for toolbar in toolbars:
     if toolbar.split('_')[-1] == 'gui.py':
@@ -28,6 +29,7 @@ for toolbar in toolbars:
         if os.path.exists(os.path.join(TOOLBARS_PATH,'_'.join(toolbar.split('_')[:-1])+'_back.py')):
             print(os.path.join(TOOLBARS_PATH,toolbar))
             importlib.import_module(TOOLBARS_PATH,toolbar)
+'''
 
 class DataStorage():
 
