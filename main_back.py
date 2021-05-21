@@ -43,5 +43,9 @@ class DataStorage():
         self.csv_data.info(buf=buffer)
         return buffer.getvalue()
 
+    def head_csv(self):
+        result = self.csv_data.head()
+        return result
+
 if __name__ == '__main__':
     pass

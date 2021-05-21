@@ -10,6 +10,10 @@ import gui_elements as gel
 from gui_data_manager import DataManager
 #todo: импорт интерфейсов для отдельных менеджеров
 
+'''
+https://stackoverflow.com/questions/26097811/image-pyimage2-doesnt-exist
+'''
+
 class GUI():
 
     def __init__(self, main_window, data, *args, **kwargs):
@@ -34,6 +38,7 @@ class GUI():
         toolbar.pack(side=tkn.TOP, fill=tkn.X)
 
         # buttons launch modules
+        #todo: добавить на кнопки картинки
         button_data = tkn.Button(toolbar, text='DataManager', command=lambda: self.show_tool(DataManager))
         button_data.grid(row=0, column=0)
 
