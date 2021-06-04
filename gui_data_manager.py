@@ -1,6 +1,10 @@
 import tkinter as tkn
 from tkinter import filedialog as fd
+from tkinter import Checkbutton
+from tkinter import LEFT
 import tkinter.ttk as ttk
+from core import Table
+
 
 class DataManager(ttk.Frame):
 
@@ -21,17 +25,24 @@ class DataManager(ttk.Frame):
         load_tab.grid_rowconfigure(0, weight=1)
         load_tab.grid_columnconfigure(0, weight=1)
 
-        load_button = ttk.Button(load_tab, text='load set', command=self.show_load_set_window)
+        load_button = ttk.Button(load_tab, text='load set', command=self.load_set)
         load_button.pack()
 
         # --- Очистка
         clean_tab = ttk.Frame(top_part)
-        top_part.add(clean_tab, text ='Очистка')
-        clean_tab.grid_rowconfigure(0, weight=1)
-        clean_tab.grid_columnconfigure(0, weight=1)
+        top_part.add(clean_tab, text ='Обработка данных')
+        # clean_tab.grid_rowconfigure(0, weight=1)
+        # clean_tab.grid_columnconfigure(0, weight=1)
 
-        clear_button = ttk.Button(clean_tab, text='clear set', command=self.clear_set)
-        clear_button.pack()
+
+        clear_button = ttk.Button(clean_tab, text='Нормализация', command=self.clear_set)
+        clear_button.grid(row=0, column=0)
+        clear_button2 = ttk.Button(clean_tab, text='Фильтрация', command=self.clear_set)
+        clear_button2.grid(row=0, column=1)
+        clear_button3 = ttk.Button(clean_tab, text='Перевод категориальных в количественные ', command=self.clear_set)
+        clear_button3.grid(row=0, column=2)
+        clear_button3 = ttk.Button(clean_tab, text='Удаление конст признаков', command=self.clear_set)
+        clear_button3.grid(row=0, column=3)
 
         # --- Трансформация
         transf_tab = ttk.Frame(top_part)
@@ -53,18 +64,33 @@ class DataManager(ttk.Frame):
 
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
-        self.pwindow.add(bottom_part ,stretch="always")
+
+        self.pwindow.add(bottom_part, stretch="always")
+
 
         bottom_part.grid_rowconfigure(0, weight=1)
         bottom_part.grid_columnconfigure(0, weight=1)
 
-        #todo: заменить текст на таблицу
-        self.dataset_viewer = tkn.Text(bottom_part, width=50, height=20)
+        # todo: заменить текст на таблицу
+        # self.dataset_viewer = tkn.Text(bottom_part, width=50, height=20)
+        # # self.dataset_info.config(state=ttk.DISABLED)
+        # scy = ttk.Scrollbar(bottom_part, command=self.dataset_viewer.yview)
+        # self.dataset_viewer.configure(yscrollcommand=scy.set)
+        # self.dataset_viewer.grid(row=0, column=0, sticky='news')
+        # scy.grid(row=0, column=1, sticky='ns')
+
+################################################
+        df = None
+        # f1 = tkn.Frame(self)
+        #
+        self.current_table = Table(bottom_part, dataframe=df, showtoolbar=1, showstatusbar=1)
+        self.current_table.grid(row=0, column=0, sticky='ew')
+        self.current_table.show()
         #self.dataset_info.config(state=ttk.DISABLED)
-        scy = ttk.Scrollbar(bottom_part,command=self.dataset_viewer.yview)
-        self.dataset_viewer.configure(yscrollcommand=scy.set)
-        self.dataset_viewer.grid(row=0, column=0, sticky='news')
-        scy.grid(row=0, column=1, sticky='ns')
+        # scy = ttk.Scrollbar(bottom_part,command=self.dataset_viewer.yview)
+        # self.dataset_viewer.configure(yscrollcommand=scy.set)
+        # self.dataset_viewer.grid(row=0, column=0, sticky='news')
+        # scy.grid(row=0, column=1, sticky='ns')
 
     def clear_set(self):
         # create local copy of a dataset
@@ -170,20 +196,28 @@ class DataManager(ttk.Frame):
         load_button = ttk.Button(self.load_set_window, text='Load', command=self.load_set)
         load_button.grid(row=0, column=0)
 
+        self.first_string=1
+
+        self.cb = Checkbutton(
+            self.load_set_window, text="Первая строка является заголовком", variable=self.first_string,
+            onvalue=1, offvalue=0)
+        self.cb.grid(row=1, column=0)
+        close_button = ttk.Button(self.load_set_window, text='OK', command=self.OK_button_click)
+        close_button.grid(row=2, column=0)
+
         frame_for_text = ttk.Frame(self.load_set_window)
-        frame_for_text.grid(row=1, column=0, sticky='news')
+        frame_for_text.grid(row=0, column=1, sticky='news')
         frame_for_text.grid_rowconfigure(0, weight=1)
         frame_for_text.grid_columnconfigure(0, weight=1)
 
-        self.dataset_info = tkn.Text(frame_for_text, width=50, height=20)
+        self.dataset_info = tkn.Text(frame_for_text, width=100, height=40)
         #self.dataset_info.config(state=ttk.DISABLED)
         scy = ttk.Scrollbar(frame_for_text,command=self.dataset_info.yview)
         self.dataset_info.configure(yscrollcommand=scy.set)
         self.dataset_info.grid(row=0, column=0, sticky='news')
         scy.grid(row=0, column=1, sticky='ns')
 
-        close_button = ttk.Button(self.load_set_window, text='OK', command=self.OK_button_click)
-        close_button.grid(row=2, column=0)
+
 
     def OK_button_click(self):
         self.load_set_window.destroy()
@@ -192,10 +226,14 @@ class DataManager(ttk.Frame):
 
     def load_set(self):
 
-        file_name = fd.askopenfilename(filetypes=(("csv", "*.csv"), ("All files", "*.*")))
-        self.controller.data.file_path = file_name
-        self.controller.data.load_csv()
-        #self.dataset_info.config(state=ttk.WRITABLE)
-        self.dataset_info.delete('1.0', tkn.END)
-        self.dataset_info.insert(1.0, self.controller.data.get_csv_info())
-        #self.dataset_info.config(state=ttk.DISABLED)
+        # file_name = fd.askopenfilename(filetypes=(("csv", "*.csv"), ("All files", "*.*")))
+        # self.controller.data.file_path = file_name
+        # self.controller.data.load_csv()
+        #
+        # #self.dataset_info.config(state=ttk.WRITABLE)
+        # self.dataset_info.delete('1.0', tkn.END)
+        # self.dataset_info.insert(1.0, self.controller.data.read_clean_csv())
+        # #self.dataset_info.config(state=ttk.DISABLED)
+
+        table = self.current_table
+        table.importCSV(dialog=True)

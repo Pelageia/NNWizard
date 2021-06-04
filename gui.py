@@ -6,8 +6,12 @@ Main GUI structure
 '''
 
 import tkinter as tkn
+from tkinter import LEFT
 import gui_elements as gel
 from gui_data_manager import DataManager
+from gui_visualisation import Visualisation
+from gui_model_creator import ModelCreator
+from PIL import Image, ImageTk
 #todo: импорт интерфейсов для отдельных менеджеров
 
 '''
@@ -39,10 +43,14 @@ class GUI():
 
         # buttons launch modules
         #todo: добавить на кнопки картинки
+
+        logo = ImageTk.PhotoImage(Image.open("test.png"))
+
         button_data = tkn.Button(toolbar, text='DataManager', command=lambda: self.show_tool(DataManager))
         button_data.grid(row=0, column=0)
 
         button_model = tkn.Button(toolbar, text='ModelCreator', command=lambda: self.show_tool(ModelCreator))
+
         button_model.grid(row=0, column=1)
 
         button_vis = tkn.Button(toolbar, text='Visualisation', command=lambda: self.show_tool(Visualisation))
@@ -74,18 +82,5 @@ class GUI():
         self.current_frame.tkraise()
 
 #todo: вынести в отдельные файлы
-class ModelCreator(tkn.Frame):
 
-    def __init__(self, parent, controller):
-        tkn.Frame.__init__(self, parent)
-        self.controller = controller
-        l = tkn.Label(self,text = 'Hello ModelCreator!')
-        l.pack()
 
-class Visualisation(tkn.Frame):
-
-    def __init__(self, parent, controller):
-        tkn.Frame.__init__(self, parent)
-        self.controller = controller
-        l = tkn.Label(self,text = 'Hello Visualisation!')
-        l.pack()

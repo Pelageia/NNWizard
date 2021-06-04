@@ -14,10 +14,10 @@ import gui
 
 class MainWindow(tkn.Tk):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
 
         # general settings
-        tkn.Tk.__init__(self, *args, **kwargs)
+        super(MainWindow, self).__init__()
         tkn.Tk.wm_title(self, main_back.WINDOW_NAME)
         tkn.Tk.wm_resizable(self, width=main_back.RESIZEABLE_FLAG, height=main_back.RESIZEABLE_FLAG)
         if main_back.MAXIMIZE_WINDOW:

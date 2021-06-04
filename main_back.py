@@ -35,13 +35,20 @@ class DataStorage():
 
     file_path = ''
 
+    def read_clean_csv(self):
+        return open(self.file_path).read()
+
     def load_csv(self):
         self.csv_data = pd.read_csv(self.file_path)
+
+    def return_csv(self):
+        return self.csv_data
 
     def get_csv_info(self):
         buffer = io.StringIO()
         self.csv_data.info(buf=buffer)
         return buffer.getvalue()
+
 
     def head_csv(self):
         result = self.csv_data.head()
