@@ -3,7 +3,7 @@ from tkinter import filedialog as fd
 from tkinter import Checkbutton
 from tkinter import LEFT
 import tkinter.ttk as ttk
-from core import Table
+from pandastable import Table
 
 
 class DataManager(ttk.Frame):
@@ -64,12 +64,12 @@ class DataManager(ttk.Frame):
 
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
-
+        bottom_part.pack(fill='both', expand=True)
         self.pwindow.add(bottom_part, stretch="always")
 
 
-        bottom_part.grid_rowconfigure(0, weight=1)
-        bottom_part.grid_columnconfigure(0, weight=1)
+        # bottom_part.grid_rowconfigure(0, weight=1)
+        # bottom_part.grid_columnconfigure(0, weight=1)
 
         # todo: заменить текст на таблицу
         # self.dataset_viewer = tkn.Text(bottom_part, width=50, height=20)
