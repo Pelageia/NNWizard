@@ -38,23 +38,23 @@ class GUI():
         '''
         Toolbar
         '''
-        toolbar = tkn.Frame(self.main_frame, bd=1, relief=tkn.RAISED, bg='green' )
-        toolbar.pack(side=tkn.TOP, fill=tkn.X)
+        toolbar = tkn.Frame(self.main_frame)
+        toolbar.pack(fill='both')
 
         # buttons launch modules
         #todo: добавить на кнопки картинки
 
-        logo = ImageTk.PhotoImage(Image.open("test.png"))
-
         button_data = tkn.Button(toolbar, text='DataManager', command=lambda: self.show_tool(DataManager))
-        button_data.grid(row=0, column=0)
+        button_data.grid(row=0, column=0, sticky='nsew')
+        tkn.Grid.columnconfigure(toolbar, 0, weight=1)
 
         button_model = tkn.Button(toolbar, text='ModelCreator', command=lambda: self.show_tool(ModelCreator))
-
-        button_model.grid(row=0, column=1)
+        button_model.grid(row=0, column=1, sticky='nsew')
+        tkn.Grid.columnconfigure(toolbar, 1, weight=1)
 
         button_vis = tkn.Button(toolbar, text='Visualisation', command=lambda: self.show_tool(Visualisation))
-        button_vis.grid(row=0, column=2)
+        button_vis.grid(row=0, column=2, sticky='nsew')
+        tkn.Grid.columnconfigure(toolbar, 2, weight=1)
 
         #todo: для каждого менеджера своя кнопка
 
@@ -62,16 +62,20 @@ class GUI():
         '''
         Frame for each tool
         '''
-        self.tools_frame = tkn.Frame(self.main_frame, bd=1, relief=tkn.RAISED)
+        self.tools_frame = tkn.Frame(self.main_frame)
         self.tools_frame.pack(fill='both', expand=True)
+
+        # грид для корректного масштабирующегося отображения фреймов
+        grid = tkn.Frame(self.tools_frame)
+        grid.grid(sticky='nsew', column=0, row=1, columnspan=1)
+        tkn.Grid.rowconfigure(self.tools_frame, 0, weight=1)
+        tkn.Grid.columnconfigure(self.tools_frame, 0, weight=1)
 
         self.tools_frames = {}
         for F in (DataManager, ModelCreator, Visualisation): #todo: добавить ссылки на классы всех менеджеров
             frame = F(self.tools_frame, self)
             self.tools_frames[F] = frame
-            # frame.grid(row=0, column=0, sticky='news')
-
-        # указываем страницу, загружаемую по умолчанию
+            frame.grid(row=0, column=0, sticky='news')
         self.show_tool(DataManager)
 
     def show_tool(self, tool_class_name):
@@ -79,5 +83,4 @@ class GUI():
         Show the frame of current tool
         '''
         self.current_frame = self.tools_frames[tool_class_name]
-        self.current_frame.pack(fill='both', expand=True)
         self.current_frame.tkraise()
