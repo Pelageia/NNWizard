@@ -3,7 +3,7 @@ from tkinter import filedialog as fd
 from tkinter import Checkbutton
 from tkinter import LEFT
 import tkinter.ttk as ttk
-from core import Table
+from pandastable import Table
 
 
 class DataManager(ttk.Frame):
@@ -64,20 +64,8 @@ class DataManager(ttk.Frame):
 
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
-
+        bottom_part.pack(fill='both', expand=True)
         self.pwindow.add(bottom_part, stretch="always")
-
-
-        bottom_part.grid_rowconfigure(0, weight=1)
-        bottom_part.grid_columnconfigure(0, weight=1)
-
-        # todo: заменить текст на таблицу
-        # self.dataset_viewer = tkn.Text(bottom_part, width=50, height=20)
-        # # self.dataset_info.config(state=ttk.DISABLED)
-        # scy = ttk.Scrollbar(bottom_part, command=self.dataset_viewer.yview)
-        # self.dataset_viewer.configure(yscrollcommand=scy.set)
-        # self.dataset_viewer.grid(row=0, column=0, sticky='news')
-        # scy.grid(row=0, column=1, sticky='ns')
 
 ################################################
         df = None
@@ -86,11 +74,6 @@ class DataManager(ttk.Frame):
         self.current_table = Table(bottom_part, dataframe=df, showtoolbar=1, showstatusbar=1)
         self.current_table.grid(row=0, column=0, sticky='ew')
         self.current_table.show()
-        #self.dataset_info.config(state=ttk.DISABLED)
-        # scy = ttk.Scrollbar(bottom_part,command=self.dataset_viewer.yview)
-        # self.dataset_viewer.configure(yscrollcommand=scy.set)
-        # self.dataset_viewer.grid(row=0, column=0, sticky='news')
-        # scy.grid(row=0, column=1, sticky='ns')
 
     def clear_set(self):
         # create local copy of a dataset

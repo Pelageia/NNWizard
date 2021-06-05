@@ -44,8 +44,6 @@ class GUI():
         # buttons launch modules
         #todo: добавить на кнопки картинки
 
-        logo = ImageTk.PhotoImage(Image.open("test.png"))
-
         button_data = tkn.Button(toolbar, text='DataManager', command=lambda: self.show_tool(DataManager))
         button_data.grid(row=0, column=0)
 
@@ -63,13 +61,13 @@ class GUI():
         Frame for each tool
         '''
         self.tools_frame = tkn.Frame(self.main_frame, bd=1, relief=tkn.RAISED)
-        self.tools_frame.pack(side=tkn.TOP, fill=tkn.X)
+        self.tools_frame.pack(fill='both', expand=True)
 
         self.tools_frames = {}
         for F in (DataManager, ModelCreator, Visualisation): #todo: добавить ссылки на классы всех менеджеров
             frame = F(self.tools_frame, self)
             self.tools_frames[F] = frame
-            frame.grid(row=0, column=0, sticky=tkn.NSEW)
+            # frame.grid(row=0, column=0, sticky='news')
 
         # указываем страницу, загружаемую по умолчанию
         self.show_tool(DataManager)
@@ -79,8 +77,5 @@ class GUI():
         Show the frame of current tool
         '''
         self.current_frame = self.tools_frames[tool_class_name]
+        self.current_frame.pack(fill='both', expand=True)
         self.current_frame.tkraise()
-
-#todo: вынести в отдельные файлы
-
-
