@@ -27,6 +27,7 @@ class MainWindow(tkn.Tk):
         self.show_GUI() # showing main parts of GUI
 
         # topbar menu
+
         top_menu = tkn.Menu(self)
         self.config(menu=top_menu)
         file_menu = tkn.Menu(top_menu, tearoff=0)
