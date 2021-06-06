@@ -80,7 +80,7 @@ class DataManager(ttk.Frame):
         ################################################
         df = None
         self.current_table = Table(bottom_part, dataframe=df, showtoolbar=0, showstatusbar=1)
-        # self.current_table.enable_menus = False
+        self.current_table.enable_menus = False
         self.current_table.grid(row=0, column=0, sticky='nsew')
         self.current_table.show()
 
@@ -152,6 +152,7 @@ class FilterDialog(tkn.Frame):
         self.m.add(tf)
         self.previewtable = Table(parent=tf, model=self.table.model, df=self.table.model.df, showstatusbar=1,
                                   showtoolbar=0, width=800, height=600)
+        self.previewtable.enable_menus = False
         self.previewtable.show()
 
         optsframe = tkn.Frame(bf)
