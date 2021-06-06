@@ -5,6 +5,8 @@ import numpy
 import pandas as pd
 from pandastable import Table, TableModel
 
+temp_df = None
+
 class DataManager(ttk.Frame):
 
     def __init__(self, parent, controller):
@@ -28,7 +30,6 @@ class DataManager(ttk.Frame):
         load_button.grid(row=0, column=0, sticky='news')
         load_tab.grid_columnconfigure(0, weight=1)
 
-
         clear_button = ttk.Button(load_tab, text='clear set', command=self.clear_set)
         clear_button.grid(row=0, column=1, sticky='news')
         load_tab.grid_columnconfigure(1, weight=1)
@@ -39,7 +40,7 @@ class DataManager(ttk.Frame):
 
         # --- Очистка
         clean_tab = ttk.Frame(top_part)
-        top_part.add(clean_tab, text ='Обработка данных', sticky='news')
+        top_part.add(clean_tab, text='Обработка данных', sticky='news')
         clean_tab.grid_columnconfigure(0, weight=1)
         clean_tab.grid_rowconfigure(0, weight=1)
 
@@ -51,27 +52,19 @@ class DataManager(ttk.Frame):
         clear_button2.grid(row=0, column=1, sticky='news')
         clean_tab.grid_columnconfigure(1, weight=1)
 
-        clear_button3 = ttk.Button(clean_tab, text='Перевод категориальных в количественные ')
-        clear_button3.grid(row=0, column=2, sticky='news')
-        clean_tab.grid_columnconfigure(2, weight=1)
-
-        clear_button3 = ttk.Button(clean_tab, text='Удаление конст признаков')
+        clear_button3 = ttk.Button(clean_tab, text='Вывод информации в консоль', command=self.print_info)
         clear_button3.grid(row=0, column=3, sticky='news')
         clean_tab.grid_columnconfigure(3, weight=1)
 
-        clear_button4 = ttk.Button(clean_tab, text='Вывод информации в консоль', command=self.print_info)
-        clear_button4.grid(row=0, column=4, sticky='news')
-        clean_tab.grid_columnconfigure(4, weight=1)
-
-        # --- Трансформация
-        transf_tab = ttk.Frame(top_part)
-        top_part.add(transf_tab, text ='Трансформация', sticky='news')
-        transf_tab.grid_rowconfigure(0, weight=1)
-        transf_tab.grid_columnconfigure(0, weight=1)
-
-        transf_button = ttk.Button(transf_tab, text='transform set', command=self.transf_set)
-        transf_button.grid(row=0, column=0, sticky='news')
-        transf_button.grid_columnconfigure(0, weight=1)
+        # # --- Трансформация
+        # transf_tab = ttk.Frame(top_part)
+        # top_part.add(transf_tab, text='Трансформация', sticky='news')
+        # transf_tab.grid_rowconfigure(0, weight=1)
+        # transf_tab.grid_columnconfigure(0, weight=1)
+        #
+        # transf_button = ttk.Button(transf_tab, text='transform set', command=self.transf_set)
+        # transf_button.grid(row=0, column=0, sticky='news')
+        # transf_button.grid_columnconfigure(0, weight=1)
 
         # # --- Сохранение
         # save_tab = ttk.Frame(top_part)
@@ -79,18 +72,17 @@ class DataManager(ttk.Frame):
         # save_tab.grid_rowconfigure(0, weight=1)
         # save_tab.grid_columnconfigure(0, weight=1)
 
-
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
         bottom_part.pack(fill='both')
         self.pwindow.add(bottom_part, stretch="always")
 
-################################################
+        ################################################
         df = None
         self.current_table = Table(bottom_part, dataframe=df, showtoolbar=0, showstatusbar=1)
+        # self.current_table.enable_menus = False
         self.current_table.grid(row=0, column=0, sticky='nsew')
         self.current_table.show()
-
 
     def clean_data(self):
         #### Вызов очистки датафрейма методом cleanData
@@ -99,7 +91,6 @@ class DataManager(ttk.Frame):
     def print_info(self):
         #### Получаем датафрейм таблицы, если указать Имя колонки, то соотвествтенно содержимое конкретной колонки
         print(self.current_table.model.df['Name'])
-
 
     def apply_clean_set(self):
         self.clear_set_window.destroy()
@@ -122,6 +113,11 @@ class DataManager(ttk.Frame):
 
     def filter(self):
         FilterDialog(self, table=self.current_table)
+        global temp_df
+        if temp_df is not None:
+            self.current_table.updateModel(model=TableModel(dataframe=temp_df))
+            self.current_table.redraw()
+            temp_df = None
 
     def save_set(self):
         self.current_table.save()
@@ -133,8 +129,8 @@ class DataManager(ttk.Frame):
         table = self.current_table
         table.importCSV(dialog=True)
 
-class FilterDialog(tkn.Frame):
 
+class FilterDialog(tkn.Frame):
     def __init__(self, parent=None, table=None):
         self.parent = parent
         self.table = table
@@ -158,9 +154,8 @@ class FilterDialog(tkn.Frame):
                                   showtoolbar=0, width=800, height=600)
         self.previewtable.show()
 
-
         optsframe = tkn.Frame(bf)
-        optsframe.pack(side=tkn.TOP,fill=tkn.BOTH)
+        optsframe.pack(side=tkn.TOP, fill=tkn.BOTH)
 
         columnNames = []
         for col in self.previewtable.model.df.columns:
@@ -174,12 +169,25 @@ class FilterDialog(tkn.Frame):
 
         b = tkn.Button(bf, text="average filtration", width=40, command=self.set_average_to_nans)
         b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
         b = tkn.Button(bf, text="delete line with emptiness", width=40, command=self.del_rows_with_emptiness)
         b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
 
-        b = tkn.Button(bf, text="Import", width=40)
+        b = tkn.Button(bf, text="convert categorial to numbers", width=40, command=self.convert_categorial_to_nums)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="delete constants", width=40, command=self.delete_constants)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="delete duplicate rows", width=40, command=self.delete_duplicate_rows)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="delete duplicate cells", width=40, command=self.delete_duplicate_cells)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="Import", width=40, command=self.doImport)
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
-        b = tkn.Button(bf, text="Cancel", width=40)
+        b = tkn.Button(bf, text="Cancel", width=40, command=self.quit)
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
         self.main.wait_window()
         return
@@ -192,7 +200,8 @@ class FilterDialog(tkn.Frame):
         colname = self.Combobox.get()
         if colname:
             df = self.previewtable.model.df
-            nan_values = df[df[colname].isna()] # возвращает массив int64, но что бы удалить по индексу строки, нужен Int
+            nan_values = df[
+                df[colname].isna()]  # возвращает массив int64, но что бы удалить по индексу строки, нужен Int
             # хитрая махинация по удалению через преобразованный массив индексов в инт
             df.drop(df.index[pd.to_numeric(nan_values.index, downcast='signed')], inplace=True)
             self.previewtable.updateModel(model=TableModel(dataframe=df))
@@ -206,3 +215,34 @@ class FilterDialog(tkn.Frame):
             df[colname] = df[colname].fillna(mean_value)
             self.previewtable.updateModel(model=TableModel(dataframe=df))
             self.previewtable.redraw()
+
+    def convert_categorial_to_nums(self):
+        colname = self.Combobox.get()
+        if colname:
+            df = self.previewtable.model.df
+            df[colname] = pd.Categorical(df[colname]).codes
+            self.previewtable.updateModel(model=TableModel(dataframe=df))
+            self.previewtable.redraw()
+
+    def delete_constants(self):
+        df = self.previewtable.model.df
+        df = df.loc[:, (df != df.iloc[0]).any()]
+        self.previewtable.updateModel(model=TableModel(dataframe=df))
+        self.previewtable.redraw()
+
+    def delete_duplicate_rows(self):
+        df = self.previewtable.model.df.drop_duplicates()
+        self.previewtable.updateModel(model=TableModel(dataframe=df))
+        self.previewtable.redraw()
+
+    def delete_duplicate_cells(self):
+        df = self.previewtable.model.df
+        df = df.loc[:, ~df.columns.duplicated()]
+        self.previewtable.updateModel(model=TableModel(dataframe=df))
+        self.previewtable.redraw()
+
+    def doImport(self):
+        global temp_df
+        temp_df = self.previewtable.model.df
+        self.main.destroy()
+        return
