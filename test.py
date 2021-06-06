@@ -1,19 +1,32 @@
 from tkinter import *
 
-root = Tk()
-Grid.rowconfigure(root, 0, weight=1)
-Grid.columnconfigure(root, 0, weight=1)
 
-frame=Frame(root)
-frame.grid(row=0, column=0, sticky=N+S+E+W)
+# event handler for button
+def addition():
+    x = int(e1.get())
+    y = int(e2.get())
+    leftdata = str(x + y)
+    leftinput.insert(1, leftdata)
 
-grid=Frame(frame)
-grid.grid(sticky=N+S+E+W, column=0, row=1, columnspan=3)
-Grid.rowconfigure(frame, 0, weight=1)
-Grid.columnconfigure(frame, 0, weight=1)
 
-#example values
-btn = Button(frame)
-btn.grid(column=0, row=0, sticky=N+S+E+W)
+# first paned window
+w1 = PanedWindow()
+w1.pack(fill=BOTH, expand=1)
 
-root.mainloop()
+leftinput = Entry(w1, bd=5)
+w1.add(leftinput)
+
+# second paned window
+w2 = PanedWindow(w1, orient=VERTICAL)
+w1.add(w2)
+
+e1 = Entry(w2)
+e2 = Entry(w2)
+
+w2.add(e1)
+w2.add(e2)
+
+bottomBtn = Button(w2, text="Addition", command=addition)
+w2.add(bottomBtn)
+
+mainloop()

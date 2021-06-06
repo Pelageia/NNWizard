@@ -1,9 +1,13 @@
 import tkinter as tkn
+from collections import OrderedDict
 from tkinter import filedialog as fd
 from tkinter import Checkbutton
 from tkinter import LEFT
 import tkinter.ttk as ttk
-from pandastable import Table
+from tkinter.scrolledtext import ScrolledText
+
+from pandastable import Table, TableModel
+
 
 
 class DataManager(ttk.Frame):
@@ -17,16 +21,26 @@ class DataManager(ttk.Frame):
 
         ## Панель вкладок
         top_part = ttk.Notebook(self.pwindow)
-        self.pwindow.add(top_part, stretch="always")
+        self.pwindow.add(top_part)
 
         # --- Загрузка
         load_tab = ttk.Frame(top_part)
-        top_part.add(load_tab, text ='Загрузка', sticky='news')
+        top_part.add(load_tab, text='Загрузка', sticky='news')
         load_tab.grid_columnconfigure(0, weight=1)
         load_tab.grid_rowconfigure(0, weight=1)
 
-        load_button = ttk.Button(load_tab, text='load set', command=self.load_set)
+        load_button = tkn.Button(load_tab, text='load set', command=self.load_set)
         load_button.grid(row=0, column=0, sticky='news')
+        load_tab.grid_columnconfigure(0, weight=1)
+
+
+        clear_button = ttk.Button(load_tab, text='clear set', command=self.clear_set)
+        clear_button.grid(row=0, column=1, sticky='news')
+        load_tab.grid_columnconfigure(1, weight=1)
+
+        save_button = ttk.Button(load_tab, text='save set', command=self.save_set)
+        save_button.grid(row=0, column=2, sticky='news')
+        load_tab.grid_columnconfigure(2, weight=1)
 
         # --- Очистка
         clean_tab = ttk.Frame(top_part)
@@ -34,11 +48,11 @@ class DataManager(ttk.Frame):
         clean_tab.grid_columnconfigure(0, weight=1)
         clean_tab.grid_rowconfigure(0, weight=1)
 
-        clear_button = ttk.Button(clean_tab, text='Нормализация', command=self.clear_set)
+        clear_button = ttk.Button(clean_tab, text='Нормализация', command=self.clean_data)
         clear_button.grid(row=0, column=0, sticky='news')
         clean_tab.grid_columnconfigure(0, weight=1)
 
-        clear_button2 = ttk.Button(clean_tab, text='Фильтрация')
+        clear_button2 = ttk.Button(clean_tab, text='Фильтрация', command=self.filter)
         clear_button2.grid(row=0, column=1, sticky='news')
         clean_tab.grid_columnconfigure(1, weight=1)
 
@@ -64,27 +78,25 @@ class DataManager(ttk.Frame):
         transf_button.grid(row=0, column=0, sticky='news')
         transf_button.grid_columnconfigure(0, weight=1)
 
-        # --- Сохранение
-        save_tab = ttk.Frame(top_part)
-        top_part.add(save_tab, text = 'Сохранение', sticky='news')
-        save_tab.grid_rowconfigure(0, weight=1)
-        save_tab.grid_columnconfigure(0, weight=1)
+        # # --- Сохранение
+        # save_tab = ttk.Frame(top_part)
+        # top_part.add(save_tab, text = 'Сохранение', sticky='news')
+        # save_tab.grid_rowconfigure(0, weight=1)
+        # save_tab.grid_columnconfigure(0, weight=1)
 
-        save_button = ttk.Button(save_tab, text='save set', command=self.save_set)
-        save_button.grid(row=0, column=0, sticky='news')
-        save_button.grid_columnconfigure(0, weight=1)
+
 
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
-        bottom_part.pack(fill='both', expand=True)
+        bottom_part.pack(fill='both')
         self.pwindow.add(bottom_part, stretch="always")
 
 ################################################
         df = None
         # f1 = tkn.Frame(self)
         #
-        self.current_table = Table(bottom_part, dataframe=df, showtoolbar=1, showstatusbar=1)
-        self.current_table.grid(row=0, column=0, sticky='ew')
+        self.current_table = Table(bottom_part, dataframe=df, showtoolbar=0, showstatusbar=1)
+        self.current_table.grid(row=0, column=0, sticky='nsew')
         self.current_table.show()
         #self.dataset_info.config(state=ttk.DISABLED)
         # scy = ttk.Scrollbar(bottom_part,command=self.dataset_viewer.yview)
@@ -92,30 +104,21 @@ class DataManager(ttk.Frame):
         # self.dataset_viewer.grid(row=0, column=0, sticky='news')
         # scy.grid(row=0, column=1, sticky='ns')
 
-    def clear_set(self):
+    def clean_data(self):
         #### Вызов очистки датафрейма методом cleanData
         self.current_table.cleanData()
 
     def print_info(self):
         #### Получаем датафрейм таблицы, если указать Имя колонки, то соотвествтенно содержимое конкретной колонки
         print(self.current_table.model.df['Name'])
+        print(self.current_table.model.getColumnType(1))
+        print(self.current_table.model.getColumnType(3))
+        print(self.current_table.model.getColumnType(8))
 
-    def update_data_set(self):
-        '''
-        обновлять данные в дата DataStorage
-        '''
-        pass
 
     def apply_clean_set(self):
         self.clear_set_window.destroy()
         self.update_data_set()
-
-    def update_local_table(self, table, data):
-        '''
-        Обновлять данные внутри окошка
-        '''
-        table.delete('1.0', tkn.END)
-        table.insert(1.0, data)
 
     def drop_lines_set(self):
         # удалили строки
@@ -123,23 +126,25 @@ class DataManager(ttk.Frame):
         # обновили вид локальной таблицы
         data = self.local_dataset.head()
         table = self.clear_set_window.local_dataset_viewer
-        self.update_local_table(table,data)
+        self.update_local_table(table, data)
         # обновим информацию для очистки
         data = self.local_dataset.isnull().sum()
         table = self.clear_set_window.info_viewer
         self.update_local_table(table, data)
 
-    def fill_lines_set(self):
-        # удалили строки
-        pass
-        # обновили вид локальной таблицы
-        self.update_local_table()
 
     def transf_set(self):
         pass
 
+
+    def filter(self):
+        FilterDialog(self, table=self.current_table)
+
     def save_set(self):
-        pass
+        self.current_table.save()
+
+    def clear_set(self):
+        self.current_table.clearTable()
 
     def load_set(self):
 
@@ -154,3 +159,46 @@ class DataManager(ttk.Frame):
 
         table = self.current_table
         table.importCSV(dialog=True)
+
+class FilterDialog(tkn.Frame):
+
+    def __init__(self, parent=None, table=None):
+        self.parent = parent
+        self.table = table
+        self.main = tkn.Toplevel()
+        self.master = self.main
+        self.main.title('Data filtering')
+        self.main.protocol("WM_DELETE_WINDOW", self.quit)
+        self.main.grab_set()
+        self.main.transient(parent)
+
+        bf = tkn.Frame(self.main)
+        bf.pack(side=LEFT, fill=tkn.BOTH)
+
+        self.m = tkn.PanedWindow(self.main, orient=tkn.VERTICAL)
+        self.m.pack(side=LEFT, fill=tkn.BOTH, expand=1)
+
+        tf = tkn.Frame(self.main)
+        self.m.add(tf)
+        self.previewtable = Table(parent=tf, model=self.table.model, df=self.table.model.df, showstatusbar=1, showtoolbar=0)
+
+        self.previewtable.show()
+
+        self.textpreview = ScrolledText(self.main, width=100, height=10, bg='white')
+        self.m.add(self.textpreview)
+        optsframe = tkn.Frame(bf)
+        optsframe.pack(side=tkn.TOP,fill=tkn.BOTH)
+
+        b = tkn.Button(bf, text="Update preview")
+        b.pack(side=tkn.TOP,fill=tkn.X,pady=2)
+        b = tkn.Button(bf, text="Import")
+        b.pack(side=tkn.TOP,fill=tkn.X,pady=2)
+        b = tkn.Button(bf, text="Cancel")
+        b.pack(side=tkn.TOP,fill=tkn.X,pady=2)
+        self.main.wait_window()
+        return
+
+    def quit(self):
+        self.main.destroy()
+        return
+

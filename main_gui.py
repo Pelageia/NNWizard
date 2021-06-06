@@ -13,9 +13,7 @@ import main_back as main_back
 import gui
 
 class MainWindow(tkn.Tk):
-
     def __init__(self):
-
         # general settings
         super(MainWindow, self).__init__()
         tkn.Tk.wm_title(self, main_back.WINDOW_NAME)
