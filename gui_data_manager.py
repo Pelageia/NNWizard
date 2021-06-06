@@ -1,14 +1,9 @@
 import tkinter as tkn
-from collections import OrderedDict
-from tkinter import filedialog as fd
-from tkinter import Checkbutton
 from tkinter import LEFT
 import tkinter.ttk as ttk
-from tkinter.scrolledtext import ScrolledText
-
+import numpy
+import pandas as pd
 from pandastable import Table, TableModel
-
-
 
 class DataManager(ttk.Frame):
 
@@ -85,7 +80,6 @@ class DataManager(ttk.Frame):
         # save_tab.grid_columnconfigure(0, weight=1)
 
 
-
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
         bottom_part.pack(fill='both')
@@ -93,16 +87,10 @@ class DataManager(ttk.Frame):
 
 ################################################
         df = None
-        # f1 = tkn.Frame(self)
-        #
         self.current_table = Table(bottom_part, dataframe=df, showtoolbar=0, showstatusbar=1)
         self.current_table.grid(row=0, column=0, sticky='nsew')
         self.current_table.show()
-        #self.dataset_info.config(state=ttk.DISABLED)
-        # scy = ttk.Scrollbar(bottom_part,command=self.dataset_viewer.yview)
-        # self.dataset_viewer.configure(yscrollcommand=scy.set)
-        # self.dataset_viewer.grid(row=0, column=0, sticky='news')
-        # scy.grid(row=0, column=1, sticky='ns')
+
 
     def clean_data(self):
         #### Вызов очистки датафрейма методом cleanData
@@ -111,9 +99,6 @@ class DataManager(ttk.Frame):
     def print_info(self):
         #### Получаем датафрейм таблицы, если указать Имя колонки, то соотвествтенно содержимое конкретной колонки
         print(self.current_table.model.df['Name'])
-        print(self.current_table.model.getColumnType(1))
-        print(self.current_table.model.getColumnType(3))
-        print(self.current_table.model.getColumnType(8))
 
 
     def apply_clean_set(self):
@@ -132,10 +117,8 @@ class DataManager(ttk.Frame):
         table = self.clear_set_window.info_viewer
         self.update_local_table(table, data)
 
-
     def transf_set(self):
         pass
-
 
     def filter(self):
         FilterDialog(self, table=self.current_table)
@@ -147,16 +130,6 @@ class DataManager(ttk.Frame):
         self.current_table.clearTable()
 
     def load_set(self):
-
-        # file_name = fd.askopenfilename(filetypes=(("csv", "*.csv"), ("All files", "*.*")))
-        # self.controller.data.file_path = file_name
-        # self.controller.data.load_csv()
-        #
-        # #self.dataset_info.config(state=ttk.WRITABLE)
-        # self.dataset_info.delete('1.0', tkn.END)
-        # self.dataset_info.insert(1.0, self.controller.data.read_clean_csv())
-        # #self.dataset_info.config(state=ttk.DISABLED)
-
         table = self.current_table
         table.importCSV(dialog=True)
 
@@ -166,7 +139,7 @@ class FilterDialog(tkn.Frame):
         self.parent = parent
         self.table = table
         self.main = tkn.Toplevel()
-        self.master = self.main
+
         self.main.title('Data filtering')
         self.main.protocol("WM_DELETE_WINDOW", self.quit)
         self.main.grab_set()
@@ -176,25 +149,38 @@ class FilterDialog(tkn.Frame):
         bf.pack(side=LEFT, fill=tkn.BOTH)
 
         self.m = tkn.PanedWindow(self.main, orient=tkn.VERTICAL)
-        self.m.pack(side=LEFT, fill=tkn.BOTH, expand=1)
+        self.m.pack(fill="both", expand=True)
+        # self.m.pack(side=LEFT, fill=tkn.BOTH, expand=1)
 
         tf = tkn.Frame(self.main)
         self.m.add(tf)
-        self.previewtable = Table(parent=tf, model=self.table.model, df=self.table.model.df, showstatusbar=1, showtoolbar=0)
-
+        self.previewtable = Table(parent=tf, model=self.table.model, df=self.table.model.df, showstatusbar=1,
+                                  showtoolbar=0, width=800, height=600)
         self.previewtable.show()
 
-        self.textpreview = ScrolledText(self.main, width=100, height=10, bg='white')
-        self.m.add(self.textpreview)
+
         optsframe = tkn.Frame(bf)
         optsframe.pack(side=tkn.TOP,fill=tkn.BOTH)
 
-        b = tkn.Button(bf, text="Update preview")
-        b.pack(side=tkn.TOP,fill=tkn.X,pady=2)
-        b = tkn.Button(bf, text="Import")
-        b.pack(side=tkn.TOP,fill=tkn.X,pady=2)
-        b = tkn.Button(bf, text="Cancel")
-        b.pack(side=tkn.TOP,fill=tkn.X,pady=2)
+        columnNames = []
+        for col in self.previewtable.model.df.columns:
+            columnNames.append(col)
+
+        self.Label = ttk.Label(bf, text="Choose column for filtration")
+        self.Label.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        self.Combobox = ttk.Combobox(bf, values=columnNames, width=40, validate='key')
+        self.Combobox.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="average filtration", width=40, command=self.set_average_to_nans)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+        b = tkn.Button(bf, text="delete line with emptiness", width=40, command=self.del_rows_with_emptiness)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="Import", width=40)
+        b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
+        b = tkn.Button(bf, text="Cancel", width=40)
+        b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
         self.main.wait_window()
         return
 
@@ -202,3 +188,21 @@ class FilterDialog(tkn.Frame):
         self.main.destroy()
         return
 
+    def del_rows_with_emptiness(self):
+        colname = self.Combobox.get()
+        if colname:
+            df = self.previewtable.model.df
+            nan_values = df[df[colname].isna()] # возвращает массив int64, но что бы удалить по индексу строки, нужен Int
+            # хитрая махинация по удалению через преобразованный массив индексов в инт
+            df.drop(df.index[pd.to_numeric(nan_values.index, downcast='signed')], inplace=True)
+            self.previewtable.updateModel(model=TableModel(dataframe=df))
+            self.previewtable.redraw()
+
+    def set_average_to_nans(self):
+        colname = self.Combobox.get()
+        if colname:
+            df = self.previewtable.model.df
+            mean_value = df[colname].mean()
+            df[colname] = df[colname].fillna(mean_value)
+            self.previewtable.updateModel(model=TableModel(dataframe=df))
+            self.previewtable.redraw()
