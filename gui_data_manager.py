@@ -1,7 +1,7 @@
 import tkinter as tkn
 from tkinter import LEFT
 import tkinter.ttk as ttk
-import numpy
+import numpy as np
 import pandas as pd
 from pandastable import Table, TableModel
 
@@ -26,7 +26,7 @@ class DataManager(ttk.Frame):
         load_tab.grid_columnconfigure(0, weight=1)
         load_tab.grid_rowconfigure(0, weight=1)
 
-        load_button = tkn.Button(load_tab, text='load set', command=self.load_set)
+        load_button = ttk.Button(load_tab, text='load set', command=self.load_set)
         load_button.grid(row=0, column=0, sticky='news')
         load_tab.grid_columnconfigure(0, weight=1)
 
@@ -52,25 +52,14 @@ class DataManager(ttk.Frame):
         clear_button2.grid(row=0, column=1, sticky='news')
         clean_tab.grid_columnconfigure(1, weight=1)
 
-        clear_button3 = ttk.Button(clean_tab, text='Вывод информации в консоль', command=self.print_info)
-        clear_button3.grid(row=0, column=3, sticky='news')
-        clean_tab.grid_columnconfigure(3, weight=1)
+        clean_tab = ttk.Frame(top_part)
+        top_part.add(clean_tab, text='Разбиение данных', sticky='news')
+        clean_tab.grid_columnconfigure(0, weight=1)
+        clean_tab.grid_rowconfigure(0, weight=1)
 
-        # # --- Трансформация
-        # transf_tab = ttk.Frame(top_part)
-        # top_part.add(transf_tab, text='Трансформация', sticky='news')
-        # transf_tab.grid_rowconfigure(0, weight=1)
-        # transf_tab.grid_columnconfigure(0, weight=1)
-        #
-        # transf_button = ttk.Button(transf_tab, text='transform set', command=self.transf_set)
-        # transf_button.grid(row=0, column=0, sticky='news')
-        # transf_button.grid_columnconfigure(0, weight=1)
-
-        # # --- Сохранение
-        # save_tab = ttk.Frame(top_part)
-        # top_part.add(save_tab, text = 'Сохранение', sticky='news')
-        # save_tab.grid_rowconfigure(0, weight=1)
-        # save_tab.grid_columnconfigure(0, weight=1)
+        clear_button = ttk.Button(clean_tab, text='Разделение данных', command=self.separate_data)
+        clear_button.grid(row=0, column=0, sticky='news')
+        clean_tab.grid_columnconfigure(0, weight=1)
 
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
@@ -108,14 +97,21 @@ class DataManager(ttk.Frame):
         table = self.clear_set_window.info_viewer
         self.update_local_table(table, data)
 
-    def transf_set(self):
-        pass
+    def separate_data(self):
+        SeparateDialog(self, table=self.current_table)
+        global temp_df
+        if temp_df is not None:
+            self.current_table.updateModel(model=TableModel(dataframe=temp_df))
+            self.current_table.model.df
+            self.current_table.redraw()
+            temp_df = None
 
     def filter(self):
         FilterDialog(self, table=self.current_table)
         global temp_df
         if temp_df is not None:
             self.current_table.updateModel(model=TableModel(dataframe=temp_df))
+            self.current_table.model.df
             self.current_table.redraw()
             temp_df = None
 
@@ -130,7 +126,7 @@ class DataManager(ttk.Frame):
         table.importCSV(dialog=True)
 
 
-class FilterDialog(tkn.Frame):
+class FilterDialog(ttk.Frame):
     def __init__(self, parent=None, table=None):
         self.parent = parent
         self.table = table
@@ -221,7 +217,8 @@ class FilterDialog(tkn.Frame):
         colname = self.Combobox.get()
         if colname:
             df = self.previewtable.model.df
-            df[colname] = pd.Categorical(df[colname]).codes
+            df[colname] = pd.Categorical(df[colname]).codes # 0, 1, 2, 3
+            # ???? перевод в 5 -> [0,0,0,0,1] или в elem/MAX
             self.previewtable.updateModel(model=TableModel(dataframe=df))
             self.previewtable.redraw()
 
@@ -241,6 +238,89 @@ class FilterDialog(tkn.Frame):
         df = df.loc[:, ~df.columns.duplicated()]
         self.previewtable.updateModel(model=TableModel(dataframe=df))
         self.previewtable.redraw()
+
+    def doImport(self):
+        global temp_df
+        temp_df = self.previewtable.model.df
+        self.main.destroy()
+        return
+
+class SeparateDialog(ttk.Frame):
+    def __init__(self, parent=None, table=None):
+        self.parent = parent
+        self.table = table
+        self.main = tkn.Toplevel()
+
+        self.main.title('Data separating')
+        self.main.protocol("WM_DELETE_WINDOW", self.quit)
+        self.main.grab_set()
+        self.main.transient(parent)
+
+        bf = tkn.Frame(self.main)
+        bf.pack(side=LEFT, fill=tkn.BOTH)
+
+        self.m = tkn.PanedWindow(self.main, orient=tkn.VERTICAL)
+        self.m.pack(fill="both", expand=True)
+
+        tf = tkn.Frame(self.main)
+        self.m.add(tf)
+        self.previewtable = Table(parent=tf, model=self.table.model, df=self.table.model.df, showstatusbar=1,
+                                  showtoolbar=0, width=800, height=600)
+        self.previewtable.enable_menus = False
+        self.previewtable.show()
+
+        optsframe = tkn.Frame(bf)
+        optsframe.pack(side=tkn.TOP, fill=tkn.BOTH)
+
+        columnNames = []
+        for col in self.previewtable.model.df.columns:
+            columnNames.append(col)
+
+        self.Label = ttk.Label(bf, text="Choose input data")
+        self.Label.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        self.cols_vals = []
+        # todo сделать родителем динамических элементов фрейм со скролом
+        for col in self.previewtable.model.df.columns:
+            cols_vals_checkbox = ttk.Checkbutton(bf, text=col,
+                             onvalue=1, offvalue=0)
+            cols_vals_checkbox.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+            self.cols_vals.append(cols_vals_checkbox)
+
+        self.Label_out = ttk.Label(bf, text="Choose output data")
+        self.Label_out.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        self.Combobox = ttk.Combobox(bf, values=columnNames, width=40, validate='key')
+        self.Combobox.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="confirm changes", width=40, command=self.del_unselected_columns)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="Import", width=40, command=self.doImport)
+        b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
+        b = tkn.Button(bf, text="Cancel", width=40, command=self.quit)
+        b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
+        self.main.wait_window()
+        return
+
+    def quit(self):
+        self.main.destroy()
+        return
+
+    def del_unselected_columns(self):
+        colname = self.Combobox.get()
+        rows_to_delete = []
+        df = self.previewtable.model.df
+        rows_to_allow = []
+        for checkbox in self.cols_vals:
+            if 'selected' in checkbox.state():
+                rows_to_allow.append(checkbox.cget("text"))
+        rows_to_allow.append(colname)
+        # todo сделать проверку на НЕ совпадение выходного и входного - требуется всплывающее окно до добавления в список
+        df = df[rows_to_allow]
+        self.previewtable.updateModel(model=TableModel(dataframe=df))
+        self.previewtable.redraw()
+
 
     def doImport(self):
         global temp_df
