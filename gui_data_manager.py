@@ -1,11 +1,18 @@
 import tkinter as tkn
 from tkinter import LEFT
+from tkinter import Canvas
 import tkinter.ttk as ttk
 import numpy as np
 import pandas as pd
 from pandastable import Table, TableModel
+from sklearn import preprocessing
+import sklearn
+from sklearn.model_selection import train_test_split
 
 temp_df = None
+input_data = None
+output_data = None
+
 
 class DataManager(ttk.Frame):
 
@@ -61,6 +68,13 @@ class DataManager(ttk.Frame):
         clear_button.grid(row=0, column=0, sticky='news')
         clean_tab.grid_columnconfigure(0, weight=1)
 
+        clear_button2 = ttk.Button(clean_tab, text='Выгрузить input and output', command=self.export_data)
+        clear_button2.grid(row=0, column=1, sticky='news')
+        clean_tab.grid_columnconfigure(1, weight=1)
+
+
+
+
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
         bottom_part.pack(fill='both')
@@ -76,6 +90,15 @@ class DataManager(ttk.Frame):
     def clean_data(self):
         #### Вызов очистки датафрейма методом cleanData
         self.current_table.cleanData()
+
+    def export_data(self):
+        global input_data, output_data
+        input = self.current_table.model.df[input_data]
+        input.to_pickle("input.pickle")
+        expected = self.current_table.model.df[output_data]
+        expected.to_pickle("output.pickle")
+
+
 
     def print_info(self):
         #### Получаем датафрейм таблицы, если указать Имя колонки, то соотвествтенно содержимое конкретной колонки
@@ -98,11 +121,18 @@ class DataManager(ttk.Frame):
         self.update_local_table(table, data)
 
     def separate_data(self):
-        SeparateDialog(self, table=self.current_table)
-        global temp_df
-        if temp_df is not None:
+        global temp_df, input_data, output_data
+        SeparateDialog(self, table=self.current_table, input_data=input_data, output_data=output_data)
+        # todo добавить подчистку правильную для цветов ( при создании новой талицы, а не импортируемой из дочернего окна)
+        if temp_df is not None and input_data is not None and output_data is not None:
             self.current_table.updateModel(model=TableModel(dataframe=temp_df))
             self.current_table.model.df
+            for col in self.current_table.model.df.columns:
+                if col in input_data:
+                    self.current_table.columncolors[col] = '#54e600'
+                else:
+                    self.current_table.columncolors[col] = 'white'
+            self.current_table.columncolors[output_data[0]] = '#990061'
             self.current_table.redraw()
             temp_df = None
 
@@ -111,7 +141,6 @@ class DataManager(ttk.Frame):
         global temp_df
         if temp_df is not None:
             self.current_table.updateModel(model=TableModel(dataframe=temp_df))
-            self.current_table.model.df
             self.current_table.redraw()
             temp_df = None
 
@@ -182,16 +211,32 @@ class FilterDialog(ttk.Frame):
         b = tkn.Button(bf, text="delete duplicate cells", width=40, command=self.delete_duplicate_cells)
         b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
 
+        b = tkn.Button(bf, text="normalize column", width=40, command=self.normalize_column)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
         b = tkn.Button(bf, text="Import", width=40, command=self.doImport)
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
+
         b = tkn.Button(bf, text="Cancel", width=40, command=self.quit)
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
+
         self.main.wait_window()
         return
 
     def quit(self):
         self.main.destroy()
         return
+
+    def normalize_column(self):
+        colname = self.Combobox.get()
+        if colname:
+            df = self.previewtable.model.df
+            x = df[[colname]].values.astype(float)
+            min_max_scaler = preprocessing.MinMaxScaler()
+            x_scaled = min_max_scaler.fit_transform(x)
+            df[colname] = x_scaled
+            self.previewtable.updateModel(model=TableModel(dataframe=df))
+            self.previewtable.redraw()
 
     def del_rows_with_emptiness(self):
         colname = self.Combobox.get()
@@ -217,7 +262,7 @@ class FilterDialog(ttk.Frame):
         colname = self.Combobox.get()
         if colname:
             df = self.previewtable.model.df
-            df[colname] = pd.Categorical(df[colname]).codes # 0, 1, 2, 3
+            df[colname] = pd.Categorical(df[colname]).codes  # 0, 1, 2, 3
             # ???? перевод в 5 -> [0,0,0,0,1] или в elem/MAX
             self.previewtable.updateModel(model=TableModel(dataframe=df))
             self.previewtable.redraw()
@@ -245,8 +290,9 @@ class FilterDialog(ttk.Frame):
         self.main.destroy()
         return
 
+
 class SeparateDialog(ttk.Frame):
-    def __init__(self, parent=None, table=None):
+    def __init__(self, parent=None, table=None, input_data=None, output_data=None):
         self.parent = parent
         self.table = table
         self.main = tkn.Toplevel()
@@ -268,6 +314,12 @@ class SeparateDialog(ttk.Frame):
                                   showtoolbar=0, width=800, height=600)
         self.previewtable.enable_menus = False
         self.previewtable.show()
+        temp_df = self.previewtable.model.df
+        if input_data is not None and output_data is not None:
+            for col in input_data:
+                self.previewtable.setColumnColors(clr='#54e600', cols=temp_df.columns.get_loc(col))
+            self.previewtable.setColumnColors(clr='#990061', cols=temp_df.columns.get_loc(output_data[0]))
+
 
         optsframe = tkn.Frame(bf)
         optsframe.pack(side=tkn.TOP, fill=tkn.BOTH)
@@ -276,14 +328,16 @@ class SeparateDialog(ttk.Frame):
         for col in self.previewtable.model.df.columns:
             columnNames.append(col)
 
-        self.Label = ttk.Label(bf, text="Choose input data")
+        self.Label = ttk.Label(optsframe, text="Choose input data")
         self.Label.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
 
         self.cols_vals = []
-        # todo сделать родителем динамических элементов фрейм со скролом
+        frame = ScrollableFrame(bf)
+        frame.pack(side=tkn.TOP)
         for col in self.previewtable.model.df.columns:
-            cols_vals_checkbox = ttk.Checkbutton(bf, text=col,
-                             onvalue=1, offvalue=0)
+            cols_vals_checkbox = ttk.Checkbutton(frame.scrollable_frame, text=col,
+                                                 onvalue=1, offvalue=0)
+            # cols_vals_checkbox.grid(row=0, column=0, sticky='nsew')
             cols_vals_checkbox.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
             self.cols_vals.append(cols_vals_checkbox)
 
@@ -300,6 +354,8 @@ class SeparateDialog(ttk.Frame):
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
         b = tkn.Button(bf, text="Cancel", width=40, command=self.quit)
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
+        self.input_data = None
+        self.output_data = None
         self.main.wait_window()
         return
 
@@ -309,21 +365,47 @@ class SeparateDialog(ttk.Frame):
 
     def del_unselected_columns(self):
         colname = self.Combobox.get()
-        rows_to_delete = []
+        # rows_to_delete = []
         df = self.previewtable.model.df
         rows_to_allow = []
         for checkbox in self.cols_vals:
             if 'selected' in checkbox.state():
                 rows_to_allow.append(checkbox.cget("text"))
-        rows_to_allow.append(colname)
-        # todo сделать проверку на НЕ совпадение выходного и входного - требуется всплывающее окно до добавления в список
-        df = df[rows_to_allow]
-        self.previewtable.updateModel(model=TableModel(dataframe=df))
+        for col in self.previewtable.model.df.columns:
+            if col in rows_to_allow:
+                self.previewtable.columncolors[col] = '#54e600'
+            else:
+                self.previewtable.columncolors[col] = 'white'
+        self.input_data = rows_to_allow
+        if colname:
+            self.previewtable.columncolors[colname] = '#990061'
         self.previewtable.redraw()
-
+        self.output_data = [colname]
+        # todo сделать проверку на НЕ совпадение выходного и входного - требуется всплывающее окно до добавления в список
 
     def doImport(self):
-        global temp_df
+        global temp_df, input_data, output_data
         temp_df = self.previewtable.model.df
+        input_data = self.input_data
+        output_data = self.output_data
         self.main.destroy()
         return
+
+
+class ScrollableFrame(ttk.Frame):
+    def __init__(self, container, *args, **kwargs):
+        super().__init__(container, *args, **kwargs)
+        canvas = Canvas(self)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = ttk.Frame(canvas)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
