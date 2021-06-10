@@ -14,8 +14,6 @@ class ModelCreator(ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self.controller = controller
 
-        #нотбук - фрейм - пейнд
-
         ## Панель вкладок
         top_part = ttk.Notebook(self)
         top_part.pack(fill='both')
@@ -25,7 +23,6 @@ class ModelCreator(ttk.Frame):
 
         self.pwindow = tkn.PanedWindow(first_frame, orient="vertical")
         self.pwindow.pack(fill="both", expand=True)
-
 
         # # --- Загрузка
         load_tab = ttk.Frame(self.pwindow)
@@ -83,6 +80,7 @@ class ModelCreator(ttk.Frame):
 
         network_types = ["Sequential"]
         self.Combobox_nt = ttk.Combobox(frame, values=network_types, width=40, validate='key')
+        self.Combobox_nt.current(0)
         self.Combobox_nt.grid(row=0, column=0, pady=5, padx=5, sticky='new')
         clean_tab.grid_columnconfigure(0, weight=1)
         clean_tab.grid_rowconfigure(0, weight=1)
@@ -93,7 +91,7 @@ class ModelCreator(ttk.Frame):
         learning_algs = ["sgd", "adam"]
         self.Combobox_la = ttk.Combobox(frame, values=learning_algs, width=40, validate='key')
         self.Combobox_la.grid(row=0, column=0, pady=5, padx=5, sticky='new')
-
+        self.Combobox_la.current(0)
         frame = ttk.LabelFrame(self.pwindow_separating, text='Loss Function')
         self.pwindow_separating.add(frame)
 
@@ -102,6 +100,7 @@ class ModelCreator(ttk.Frame):
 
         self.Combobox_lf = ttk.Combobox(frame, values=loss_funcs, width=40, validate='key')
         self.Combobox_lf.grid(row=0, column=0, pady=5, padx=5, sticky='new')
+        self.Combobox_lf.current(0)
         clean_tab.grid_columnconfigure(0, weight=1)
 
         frame = ttk.LabelFrame(self.pwindow_separating, text='Metrics Function')
@@ -110,13 +109,17 @@ class ModelCreator(ttk.Frame):
         metrics_funcs = ["accuracy"]
         self.Combobox_mf = ttk.Combobox(frame, values=metrics_funcs, width=40, validate='key')
         self.Combobox_mf.grid(row=0, column=0, pady=5, padx=5, sticky='new')
+        self.Combobox_mf.current(0)
         clean_tab.grid_columnconfigure(0, weight=1)
 
         frame = ttk.LabelFrame(self.pwindow_separating, text='Number of layers')
         self.pwindow_separating.add(frame)
 
+
         self.number_layers_entry = ttk.Entry(frame)
+        self.number_layers_entry.insert(0, "2")
         self.number_layers_entry.grid(row=0, column=0, pady=5, padx=5, sticky='news')
+
         clean_tab.grid_columnconfigure(0, weight=1)
 
         model_create_layers_button = ttk.Button(frame, text='Create layers', command=self.create_layers)
@@ -128,8 +131,9 @@ class ModelCreator(ttk.Frame):
         #
         self.layers = []
         self.layers_count = []
-        mas = ["1", "2"]
+        mas = ["0", "1"]  # дефолт 0 - вход, 1 - выход
         self.Combobox_pfl = ttk.Combobox(frame, width=40, values=mas, validate='key')
+        self.Combobox_pfl.current(0)
         self.Combobox_pfl.grid(row=0, column=0, pady=5, padx=5, sticky='new')
 
         frame_pf = ttk.Frame(frame)
@@ -140,6 +144,7 @@ class ModelCreator(ttk.Frame):
         clean_tab.grid_columnconfigure(0, weight=1)
 
         self.number_neurons_entry = ttk.Entry(frame_pf)
+        self.number_neurons_entry.insert(0, "2")
         self.number_neurons_entry.grid(row=0, column=1, pady=5, padx=5,  sticky='news')
         clean_tab.grid_columnconfigure(1, weight=1)
 
@@ -152,6 +157,7 @@ class ModelCreator(ttk.Frame):
         #
         transfer_funcs = ["relu", "sigmoid", "softmax"]
         self.Combobox_transf = ttk.Combobox(frame_pf, values=transfer_funcs, width=40, validate='key')
+        self.Combobox_transf.current(0)
         self.Combobox_transf.grid(row=0, column=1, pady=5, padx=5, sticky='new')
 
         frame_pf = ttk.Frame(frame)
@@ -175,44 +181,49 @@ class ModelCreator(ttk.Frame):
         self.pwindow.pack(fill="both", expand=True)
 
         # # --- Загрузка
-        load_tab = ttk.Frame(self.pwindow)
+        load_tab = ttk.LabelFrame(self.pwindow, text='Learning parametrs')
         self.pwindow.add(load_tab)
 
-        load_button = ttk.Button(load_tab, text='Learn model', command=self.learn_model)
-        load_button.grid(row=0, column=0, sticky='news')
+        Label = ttk.Label(load_tab, text="Epochs:")
+        Label.grid(row=0, column=0,  pady=5, padx=5, sticky='new')
         load_tab.grid_columnconfigure(0, weight=1)
+
+        self.number_epochs_entry = ttk.Entry(load_tab)
+        self.number_epochs_entry.insert(0, "100")
+        self.number_epochs_entry.grid(row=0, column=1, pady=5, padx=5, sticky='news')
+        load_tab.grid_columnconfigure(1, weight=1)
+
+        Label = ttk.Label(load_tab, text="Validation_split:")
+        Label.grid(row=1, column=0, pady=5, padx=5, sticky='new')
+        load_tab.grid_columnconfigure(0, weight=1)
+
+        self.validation_split_entry = ttk.Entry(load_tab)
+        self.validation_split_entry.insert(0, "0.2")
+        self.validation_split_entry.grid(row=1, column=1, pady=5, padx=5, sticky='news')
+        load_tab.grid_columnconfigure(1, weight=1)
+
+
+        # load_button = ttk.Button(load_tab, text='Learn model', command=self.learn_model)
+        # load_button.grid(row=0, column=0, sticky='news')
+        # load_tab.grid_columnconfigure(0, weight=1)
+
+        load_button = ttk.Button(load_tab, text='Learn model', command=self.learn_model)
+        load_button.grid(row=2, column=0, pady=5, padx=5, sticky='news')
+        load_tab.grid_columnconfigure(2, weight=1)
 
         self.my_model = None
 
-        # frame = ttk.Frame(self.pwindow)
-        # self.pwindow_separating.add(frame)
-        #
-        # Label = ttk.Label(load_tab, text="Network Type:")
-        # Label.grid(row=0, column=0, sticky='new')
-        # load_tab.grid_columnconfigure(0, weight=1)
 
-
-
-        # clean_tab.grid_columnconfigure(0, weight=1)
-        # clean_tab.grid_rowconfigure(0, weight=1)
-        #
-        # clear_button = ttk.Button(clean_tab, text='Разделение данных')
-        # clear_button.grid(row=0, column=0, sticky='new')
-        # clean_tab.grid_columnconfigure(0, weight=1)
-
-        ## Информация о датасете
 
     def create_layers(self):
-        # todo: победить обновление комбобокса
-
+        mas = []
+        self.layers.clear()
         layers = self.number_layers_entry.get()
         if layers.isdigit():
             layers = int(layers)
-            # for i in range(layers):
-            #     mas.append(str(i))
-            # self.Combobox_propfl.set('5')
-            # self.Combobox_propfl["values"] = mas
-            # self.Combobox_propfl.update()
+            for i in range(0, layers):
+                mas.append(str(i))
+            self.Combobox_pfl['values'] = mas
             for i in range(layers-1):
                 #k.layers.Dense(units=3, activation="relu")
                 #k.layers.Dense(units=1, activation="sigmoid")
@@ -221,7 +232,12 @@ class ModelCreator(ttk.Frame):
             print(self.layers)
 
     def change_layer(self):
-        pass
+        layer_index = self.Combobox_pfl.get()
+        neuron_numbers = self.number_neurons_entry.get()
+        transfer_func = self.Combobox_transf.get()
+        if layer_index is not None and neuron_numbers is not None and transfer_func is not None:
+            self.layers[int(layer_index)] = [int(neuron_numbers), transfer_func]
+            print(self.layers)
 
     def create_model(self):
         network_types = self.Combobox_nt.get()
@@ -278,7 +294,12 @@ class ModelCreator(ttk.Frame):
             test_size=self.percent / 100,
             random_state=42)
         model = self.my_model
-        fit_results = model.fit(x=x_train, y=y_train, epochs=1000, validation_split=0.2)
+        epochs = self.number_epochs_entry.get()
+        validation_split = self.validation_split_entry.get()
+        if epochs is not None and validation_split is not None:
+            epochs = int(epochs)
+            validation_split = float(validation_split)
+            fit_results = model.fit(x=x_train, y=y_train, epochs=epochs, validation_split=validation_split)
 
 
 class My_Model():
