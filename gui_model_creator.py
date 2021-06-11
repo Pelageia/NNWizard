@@ -147,7 +147,7 @@ class ModelCreator(ttk.Frame):
         clean_tab.grid_columnconfigure(0, weight=1)
 
         self.number_neurons_entry = ttk.Entry(frame_pf)
-        self.number_neurons_entry.insert(0, "2")
+        self.number_neurons_entry.insert(0, "3")
         self.number_neurons_entry.grid(row=0, column=1, pady=5, padx=5,  sticky='news')
         clean_tab.grid_columnconfigure(1, weight=1)
 
