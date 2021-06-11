@@ -8,6 +8,7 @@ from pandastable import Table, TableModel
 from sklearn import preprocessing
 import sklearn
 from sklearn.model_selection import train_test_split
+import tkinter.messagebox as mb
 
 temp_df = None
 input_data = None
@@ -92,13 +93,22 @@ class DataManager(ttk.Frame):
         self.current_table.cleanData()
 
     def export_data(self):
-        global input_data, output_data
+        # global input_data, output_data
         input = self.current_table.model.df[input_data]
-        input.to_pickle("input.pickle")
-        expected = self.current_table.model.df[output_data]
-        expected.to_pickle("output.pickle")
+        # print(input.dtypes)
 
+        catch_object = [col for col, dt in input.dtypes.items() if dt == object]
+        if len(catch_object) > 0:
+            mb.showerror("Error", "Denied try to export object data in input dataset")
+        else:
 
+            expected = self.current_table.model.df[output_data]
+            catch_object = [col for col, dt in expected.dtypes.items() if dt == object]
+            if len(catch_object) > 0:
+                mb.showerror("Error", "Denied try to export object data in export dataset")
+            else:
+                input.to_pickle("input.pickle")
+                expected.to_pickle("output.pickle")
 
     def print_info(self):
         #### Получаем датафрейм таблицы, если указать Имя колонки, то соотвествтенно содержимое конкретной колонки
@@ -123,7 +133,6 @@ class DataManager(ttk.Frame):
     def separate_data(self):
         global temp_df, input_data, output_data
         SeparateDialog(self, table=self.current_table, input_data=input_data, output_data=output_data)
-        # todo добавить подчистку правильную для цветов ( при создании новой талицы, а не импортируемой из дочернего окна)
         if temp_df is not None and input_data is not None and output_data is not None:
             self.current_table.updateModel(model=TableModel(dataframe=temp_df))
             self.current_table.model.df
@@ -137,12 +146,14 @@ class DataManager(ttk.Frame):
             temp_df = None
 
     def filter(self):
-        FilterDialog(self, table=self.current_table)
+        table = self.current_table
+        FilterDialog(self, table=table)
         global temp_df
         if temp_df is not None:
             self.current_table.updateModel(model=TableModel(dataframe=temp_df))
             self.current_table.redraw()
             temp_df = None
+
 
     def save_set(self):
         self.current_table.save()
@@ -219,13 +230,11 @@ class FilterDialog(ttk.Frame):
 
         b = tkn.Button(bf, text="Cancel", width=40, command=self.quit)
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
-
         self.main.wait_window()
-        return
+
 
     def quit(self):
         self.main.destroy()
-        return
 
     def normalize_column(self):
         colname = self.Combobox.get()
@@ -288,7 +297,6 @@ class FilterDialog(ttk.Frame):
         global temp_df
         temp_df = self.previewtable.model.df
         self.main.destroy()
-        return
 
 
 class SeparateDialog(ttk.Frame):
@@ -352,6 +360,7 @@ class SeparateDialog(ttk.Frame):
 
         b = tkn.Button(bf, text="Import", width=40, command=self.doImport)
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
+
         b = tkn.Button(bf, text="Cancel", width=40, command=self.quit)
         b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
         self.input_data = None
@@ -371,17 +380,23 @@ class SeparateDialog(ttk.Frame):
         for checkbox in self.cols_vals:
             if 'selected' in checkbox.state():
                 rows_to_allow.append(checkbox.cget("text"))
-        for col in self.previewtable.model.df.columns:
-            if col in rows_to_allow:
-                self.previewtable.columncolors[col] = '#54e600'
-            else:
-                self.previewtable.columncolors[col] = 'white'
-        self.input_data = rows_to_allow
-        if colname:
-            self.previewtable.columncolors[colname] = '#990061'
-        self.previewtable.redraw()
-        self.output_data = [colname]
-        # todo сделать проверку на НЕ совпадение выходного и входного - требуется всплывающее окно до добавления в список
+        flag = True
+        for col in rows_to_allow:
+            if col == colname:
+                flag = False
+                mb.showerror("Error", "Chosen the same target as input")
+        if flag:
+            for col in self.previewtable.model.df.columns:
+                if col in rows_to_allow:
+                    self.previewtable.columncolors[col] = '#54e600'
+                else:
+                    self.previewtable.columncolors[col] = 'white'
+            self.input_data = rows_to_allow
+            if colname:
+                self.previewtable.columncolors[colname] = '#990061'
+
+            self.previewtable.redraw()
+            self.output_data = [colname]
 
     def doImport(self):
         global temp_df, input_data, output_data

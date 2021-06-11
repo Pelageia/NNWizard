@@ -6,7 +6,10 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import numpy as np
 # import keras as k
-
+import pickle
+import matplotlib.pyplot as plt
+import matplotlib
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class ModelCreator(ttk.Frame):
 
@@ -203,20 +206,56 @@ class ModelCreator(ttk.Frame):
         load_tab.grid_columnconfigure(1, weight=1)
 
 
-        # load_button = ttk.Button(load_tab, text='Learn model', command=self.learn_model)
-        # load_button.grid(row=0, column=0, sticky='news')
-        # load_tab.grid_columnconfigure(0, weight=1)
-
-        load_button = ttk.Button(load_tab, text='Learn model', command=self.learn_model)
-        load_button.grid(row=2, column=0, pady=5, padx=5, sticky='news')
+        learn_button = ttk.Button(load_tab, text='Learn model', command=self.learn_model)
+        learn_button.grid(row=2, column=0, pady=5, padx=5, sticky='news')
         load_tab.grid_columnconfigure(2, weight=1)
 
         self.my_model = None
+        self.final_modal = None
+        save_model_button = ttk.Button(load_tab, text='Save model', command=self.save_model)
+        save_model_button.grid(row=2, column=1, pady=5, padx=5, sticky='news')
+        load_tab.grid_columnconfigure(2, weight=1)
 
+        show_graphs_button = ttk.Button(load_tab, text='Show graphs', command=self.show_graphs)
+        show_graphs_button.grid(row=2, column=2, pady=5, padx=5, sticky='news')
+        load_tab.grid_columnconfigure(1, weight=1)
+
+        self.graph_frame = ttk.Frame(self.pwindow)
+        self.pwindow.add(self.graph_frame)
+
+    def save_model(self):
+        model_name = self.network_name_entry.get()
+        if self.final_modal is not None:
+            self.final_modal.save(f"{model_name}")
+            with open(f"{model_name}/history", 'wb') as file_pi:
+                pickle.dump(self.history.history, file_pi)
+
+
+    def show_graphs(self):
+        matplotlib.use('TkAgg')
+        fig, axs = plt.subplots(2)
+        fig.suptitle('Vertically stacked subplots')
+        fig.set_size_inches(10.5, 7.5)
+        canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
+        plot_widget = canvas.get_tk_widget()
+
+        plt.title("Losses train/validation")
+        axs[0].plot(self.history.history["loss"], label="Train")
+        axs[0].plot(self.history.history["val_loss"], label="Validation")
+        plot_widget.grid(row=0, column=0, pady=5, padx=5)
+
+        plt.title("Accuracies train/validation")
+        axs[1].plot(self.history.history["accuracy"], label="Train")
+        axs[1].plot(self.history.history["val_accuracy"], label="Validation")
+        plot_widget.grid(row=1, column=0, pady=5, padx=5)
+        plt.legend()
+        plt.show()
 
 
     def create_layers(self):
         mas = []
+        self.my_model = None
+        self.final_modal = None
         self.layers.clear()
         layers = self.number_layers_entry.get()
         if layers.isdigit():
@@ -299,7 +338,11 @@ class ModelCreator(ttk.Frame):
         if epochs is not None and validation_split is not None:
             epochs = int(epochs)
             validation_split = float(validation_split)
-            fit_results = model.fit(x=x_train, y=y_train, epochs=epochs, validation_split=validation_split)
+            self.history = model.fit(x=x_train, y=y_train, epochs=epochs, validation_split=validation_split)
+            self.final_modal = model
+            print(self.final_modal.history)
+
+
 
 
 class My_Model():
