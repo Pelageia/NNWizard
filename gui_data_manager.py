@@ -10,6 +10,11 @@ import sklearn
 from sklearn.model_selection import train_test_split
 import tkinter.messagebox as mb
 
+import matplotlib.pyplot as plt
+import matplotlib
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
 temp_df = None
 input_data = None
 output_data = None
@@ -52,12 +57,12 @@ class DataManager(ttk.Frame):
         clean_tab.grid_columnconfigure(0, weight=1)
         clean_tab.grid_rowconfigure(0, weight=1)
 
-        clear_button = ttk.Button(clean_tab, text='Нормализация', command=self.clean_data)
-        clear_button.grid(row=0, column=0, sticky='news')
+        clear_button2 = ttk.Button(clean_tab, text='Фильтрация', command=self.filter)
+        clear_button2.grid(row=0, column=0, sticky='news')
         clean_tab.grid_columnconfigure(0, weight=1)
 
-        clear_button2 = ttk.Button(clean_tab, text='Фильтрация', command=self.filter)
-        clear_button2.grid(row=0, column=1, sticky='news')
+        clear_button = ttk.Button(clean_tab, text='Визуализация', command=self.visualization)
+        clear_button.grid(row=0, column=1, sticky='news')
         clean_tab.grid_columnconfigure(1, weight=1)
 
         clean_tab = ttk.Frame(top_part)
@@ -72,9 +77,6 @@ class DataManager(ttk.Frame):
         clear_button2 = ttk.Button(clean_tab, text='Выгрузить input and output', command=self.export_data)
         clear_button2.grid(row=0, column=1, sticky='news')
         clean_tab.grid_columnconfigure(1, weight=1)
-
-
-
 
         ## Информация о датасете
         bottom_part = ttk.Frame(self.pwindow)
@@ -165,6 +167,8 @@ class DataManager(ttk.Frame):
         table = self.current_table
         table.importCSV(dialog=True)
 
+    def visualization(self):
+        VisualizeDialog(self, self.current_table.model.df)
 
 class FilterDialog(ttk.Frame):
     def __init__(self, parent=None, table=None):
@@ -203,7 +207,7 @@ class FilterDialog(ttk.Frame):
 
         self.Combobox = ttk.Combobox(bf, values=columnNames, width=40, validate='key')
         self.Combobox.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
-
+        self.Combobox.current(0)
         b = tkn.Button(bf, text="average filtration", width=40, command=self.set_average_to_nans)
         b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
 
@@ -223,6 +227,9 @@ class FilterDialog(ttk.Frame):
         b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
 
         b = tkn.Button(bf, text="normalize column", width=40, command=self.normalize_column)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="delete column", width=40, command=self.delete_column)
         b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
 
         b = tkn.Button(bf, text="Import", width=40, command=self.doImport)
@@ -247,6 +254,21 @@ class FilterDialog(ttk.Frame):
             self.previewtable.updateModel(model=TableModel(dataframe=df))
             self.previewtable.redraw()
 
+    def delete_column(self):
+        colname = self.Combobox.get()
+        if colname:
+            df = self.previewtable.model.df
+            df.drop([colname], axis=1, inplace=True)
+            self.previewtable.model.df = df
+            self.previewtable.updateModel(model=TableModel(dataframe=df))
+            self.previewtable.redraw()
+
+            columnNames = []
+            for col in self.previewtable.model.df.columns:
+                columnNames.append(col)
+            self.Combobox['values'] = columnNames
+            self.Combobox.current(0)
+
     def del_rows_with_emptiness(self):
         colname = self.Combobox.get()
         if colname:
@@ -255,6 +277,7 @@ class FilterDialog(ttk.Frame):
                 df[colname].isna()]  # возвращает массив int64, но что бы удалить по индексу строки, нужен Int
             # хитрая махинация по удалению через преобразованный массив индексов в инт
             df.drop(df.index[pd.to_numeric(nan_values.index, downcast='signed')], inplace=True)
+            self.previewtable.model.df = df
             self.previewtable.updateModel(model=TableModel(dataframe=df))
             self.previewtable.redraw()
 
@@ -345,7 +368,7 @@ class SeparateDialog(ttk.Frame):
         for col in self.previewtable.model.df.columns:
             cols_vals_checkbox = ttk.Checkbutton(frame.scrollable_frame, text=col,
                                                  onvalue=1, offvalue=0)
-            # cols_vals_checkbox.grid(row=0, column=0, sticky='nsew')
+
             cols_vals_checkbox.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
             self.cols_vals.append(cols_vals_checkbox)
 
@@ -403,6 +426,7 @@ class SeparateDialog(ttk.Frame):
         temp_df = self.previewtable.model.df
         input_data = self.input_data
         output_data = self.output_data
+        self.previewtable = None
         self.main.destroy()
         return
 
@@ -424,3 +448,74 @@ class ScrollableFrame(ttk.Frame):
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+
+
+class VisualizeDialog(ttk.Frame):
+    def __init__(self, parent=None, dataframe=None):
+        self.parent = parent
+        self.dataframe = dataframe
+        self.main = tkn.Toplevel()
+
+        self.main.title('Data visualization')
+        self.main.protocol("WM_DELETE_WINDOW", self.quit)
+        self.main.grab_set()
+        self.main.transient(parent)
+
+        bf = tkn.Frame(self.main)
+        bf.pack(fill=tkn.BOTH)
+
+        load_tab = ttk.LabelFrame(bf, text='Choose first variable')
+        load_tab.pack(fill=tkn.BOTH)
+
+        columnNames = []
+
+        catch_object = [col for col, dt in self.dataframe.dtypes.items() if dt == object]
+
+        for col in self.dataframe.columns:
+            if col not in catch_object:
+                columnNames.append(col)
+
+        self.Combobox_n1 = ttk.Combobox(load_tab, values=columnNames, width=40, validate='key')
+        self.Combobox_n1.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        load_tab = ttk.LabelFrame(bf, text='Choose procents to visualize')
+        load_tab.pack(fill=tkn.BOTH)
+
+        procents = ["100", "75", "50", "25"]
+        self.Combobox_n2 = ttk.Combobox(load_tab, values=procents, width=40, validate='key')
+        self.Combobox_n2.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="Visualize", width=40, command=self.make_visualization)
+        b.pack(side=tkn.TOP, fill=tkn.BOTH, pady=2)
+
+        b = tkn.Button(bf, text="Close", width=40, command=self.quit)
+        b.pack(side=tkn.BOTTOM, fill=tkn.BOTH, pady=2)
+        self.input_data = None
+        self.output_data = None
+
+        self.graph_frame = ttk.Frame(bf)
+
+        self.main.wait_window()
+        return
+
+    def quit(self):
+        self.main.destroy()
+        return
+
+    def make_visualization(self):
+        colname_1 = self.Combobox_n1.get()
+        procent = int(self.Combobox_n2.get())
+        df = self.dataframe
+        kolvo = self.dataframe.shape[0]
+        matplotlib.use('TkAgg')
+        fig = plt.figure(1)
+        fig.set_size_inches(10.5, 7.5)
+        canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
+        plot_widget = canvas.get_tk_widget()
+
+        plt.title(f"{colname_1}")
+        plt.stem(self.dataframe[colname_1][:int(kolvo*procent/100)], label=f"{colname_1}")
+        plot_widget.grid(row=0, column=0, pady=5, padx=5)
+
+        plt.legend()
+        plt.show()
