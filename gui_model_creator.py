@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import numpy as np
 # import keras as k
+from tkinter import Canvas
 import pickle
 import matplotlib.pyplot as plt
 import matplotlib
@@ -22,7 +23,7 @@ class ModelCreator(ttk.Frame):
         top_part.pack(fill='both')
 
         first_frame = ttk.Frame(top_part)
-        top_part.add(first_frame, text='Разбиение данных', sticky='new')
+        top_part.add(first_frame, text='Разбиение данных', sticky='news')
 
         self.pwindow = tkn.PanedWindow(first_frame, orient="vertical")
         self.pwindow.pack(fill="both", expand=True)
@@ -169,7 +170,6 @@ class ModelCreator(ttk.Frame):
         change_layer_button.grid(row=0, column=0, sticky='news')
         clean_tab.grid_columnconfigure(0, weight=1)
 
-
         frame = ttk.LabelFrame(self.pwindow_separating, text='')
         self.pwindow_separating.add(frame)
 
@@ -177,13 +177,13 @@ class ModelCreator(ttk.Frame):
         model_create_button.grid(row=0, column=0, sticky='news')
         clean_tab.grid_columnconfigure(0, weight=1)
 
+
         third_frame = ttk.Frame(top_part)
-        top_part.add(third_frame, text='Обучение модели', sticky='new')
+        top_part.add(third_frame, text='Обучение модели', sticky='news')
 
         self.pwindow = tkn.PanedWindow(third_frame, orient="vertical")
         self.pwindow.pack(fill="both", expand=True)
 
-        # # --- Загрузка
         load_tab = ttk.LabelFrame(self.pwindow, text='Learning parametrs')
         self.pwindow.add(load_tab)
 
@@ -205,7 +205,6 @@ class ModelCreator(ttk.Frame):
         self.validation_split_entry.grid(row=1, column=1, pady=5, padx=5, sticky='news')
         load_tab.grid_columnconfigure(1, weight=1)
 
-
         learn_button = ttk.Button(load_tab, text='Learn model', command=self.learn_model)
         learn_button.grid(row=2, column=0, pady=5, padx=5, sticky='news')
         load_tab.grid_columnconfigure(2, weight=1)
@@ -220,8 +219,71 @@ class ModelCreator(ttk.Frame):
         show_graphs_button.grid(row=2, column=2, pady=5, padx=5, sticky='news')
         load_tab.grid_columnconfigure(1, weight=1)
 
-        self.graph_frame = ttk.Frame(self.pwindow)
-        self.pwindow.add(self.graph_frame)
+        self.frame = ttk.LabelFrame(self.pwindow, text='Show weights and biases')
+        self.pwindow.add(self.frame)
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.columnconfigure(1, weight=1)
+
+        self.frame.rowconfigure(1, weight=1)
+        info_frame1 = ttk.Frame(self.frame)
+        info_frame1.grid(row=0, column=0, sticky='news', pady=2)
+        info_frame1.rowconfigure(0, weight=1)
+        info_frame1.rowconfigure(1, weight=1)
+        info_frame1.rowconfigure(2, weight=1)
+
+        Label = ttk.Label(info_frame1, text="Choose weights for layer:")
+        Label.grid(row=0, column=0,  sticky='news')
+
+        weights = []
+        self.Combobox_weights = ttk.Combobox(info_frame1, values=weights,  validate='key')
+        self.Combobox_weights.grid(row=0, column=1, sticky='news')
+
+        show_button = ttk.Button(info_frame1, text='Show info', command=self.show_model_w)
+        show_button.grid(row=0, column=2, sticky='news')
+
+        info_frame2 = ttk.Frame(self.frame)
+        info_frame2.grid(row=0, column=1, sticky='news')
+
+        info_frame2.rowconfigure(0, weight=1)
+        info_frame2.rowconfigure(1, weight=1)
+        info_frame2.rowconfigure(2, weight=1)
+
+        Label = ttk.Label(info_frame2, text="Choose biases for layer:")
+        Label.grid(row=0, column=0, sticky='new')
+
+        beises = []
+        self.Combobox_beises = ttk.Combobox(info_frame2, values=beises,  validate='key')
+        self.Combobox_beises.grid(row=0, column=1, sticky='news')
+
+        show_button = ttk.Button(info_frame2, text='Show info', command=self.show_model_b)
+        show_button.grid(row=0, column=2, sticky='news')
+
+
+        frame = ScrollableFrame(self.frame)
+        frame.grid(row=1, column=0, sticky='news')
+        self.dataset_viewer = tkn.Text(frame.scrollable_frame)
+        self.dataset_viewer.pack(fill=tkn.BOTH)
+
+        frame = ScrollableFrame(self.frame)
+        frame.grid(row=1, column=1, sticky='news')
+        self.dataset_viewer2 = tkn.Text(frame.scrollable_frame)
+        self.dataset_viewer2.pack(fill=tkn.BOTH)
+
+
+
+    def show_model_w(self):
+        layer = self.Combobox_weights.get()
+        if layer is not None:
+            weights, biases = self.final_modal.layers[int(layer)].get_weights()
+            self.dataset_viewer.delete('1.0', tkn.END)
+            self.dataset_viewer.insert(1.0, weights)
+
+    def show_model_b(self):
+        layer = self.Combobox_beises.get()
+        if layer is not None:
+            weights, biases = self.final_modal.layers[int(layer)].get_weights()
+            self.dataset_viewer2.delete('1.0', tkn.END)
+            self.dataset_viewer2.insert(1.0, biases)
 
     def save_model(self):
         model_name = self.network_name_entry.get()
@@ -232,11 +294,12 @@ class ModelCreator(ttk.Frame):
 
 
     def show_graphs(self):
+        # todo: пофиксить родителя, иначе происходит несанкционированное прилипание
         matplotlib.use('TkAgg')
         fig, axs = plt.subplots(2)
         fig.suptitle('Vertically stacked subplots')
         fig.set_size_inches(10.5, 7.5)
-        canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
+        canvas = FigureCanvasTkAgg(fig, master=self.frame)
         plot_widget = canvas.get_tk_widget()
 
         plt.title("Losses train/validation")
@@ -264,8 +327,6 @@ class ModelCreator(ttk.Frame):
                 mas.append(str(i))
             self.Combobox_pfl['values'] = mas
             for i in range(layers-1):
-                #k.layers.Dense(units=3, activation="relu")
-                #k.layers.Dense(units=1, activation="sigmoid")
                 self.layers.append([3, "relu"])
             self.layers.append([1, "sigmoid"])
             print(self.layers)
@@ -287,14 +348,16 @@ class ModelCreator(ttk.Frame):
         optimizer = self.Combobox_la.get()
         metrics = self.Combobox_mf.get()
         # print(network_types, layers, loss, optimizer, metrics)
-        self.my_model = My_Model(network_types=network_types, layers_=layers, loss=loss, optimizer=optimizer,
-                                  metrics=metrics).return_model()
+        self.class_model = My_Model(network_types=network_types, layers_=layers, loss=loss, optimizer=optimizer,
+                                  metrics=metrics)
+        self.my_model = self.class_model.return_model()
         print(self.my_model)
 
     def load_pickle(self):
         self.input_frame = pd.read_pickle("input.pickle")
         self.output_frame = pd.read_pickle("output.pickle")
         self.stk_count = len(self.output_frame.index)
+        self.const_count = self.stk_count
         self.current_table.updateModel(model=TableModel(dataframe=pd.DataFrame([['Training', 100, self.stk_count], ['Test', 0, self.stk_count_test]],
                      columns=['Dataset', 'Size %', 'Size str'])))
         self.current_table.redraw()
@@ -304,50 +367,50 @@ class ModelCreator(ttk.Frame):
         if self.percent.isdigit():
             self.percent = int(self.percent)
             if 0 <= self.percent <= 100:
-                self.stk_count_test = int(self.stk_count * (self.percent) / 100)
-                self.stk_count = self.stk_count - self.stk_count_test
+                self.stk_count_test = int(self.const_count * (self.percent) / 100)
+                self.stk_count = self.const_count - self.stk_count_test
                 self.current_table.updateModel(model=TableModel(dataframe=
                                                                 pd.DataFrame(
                                                                     [['Training', 100 - self.percent, self.stk_count],
                                                                      ['Test', self.percent, self.stk_count_test]],
                                                                     columns=['Dataset', 'Size %', 'Size str'])))
                 self.current_table.redraw()
-                # inputs_train, inputs_test, expected_output_train, expected_output_test = train_test_split(
-                #     self.input_frame,
-                #     self.output_frame,
-                #     test_size=percent / 100,
-                #     random_state=42)
-                # print(inputs_train, inputs_test, expected_output_train, expected_output_test)
+                supervised = make_supervised(self.input_frame, self.output_frame)
+                encoders = {}
+                encoders = make_encoders(self.input_frame, encoders)
+                encoders = make_encoders(self.output_frame, encoders)
+                encoded_inputs = np.array(encode(supervised["inputs"], encoders))
+                encoded_outputs = np.array(encode(supervised["outputs"], encoders))
+
+                self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(
+                    encoded_inputs,
+                    encoded_outputs,
+                    test_size=self.percent / 100,
+                    random_state=42)
 
     def learn_model(self):
-        supervised = make_supervised(self.input_frame, self.output_frame)
-        encoders = {}
-        encoders = make_encoders(self.input_frame, encoders)
-        encoders = make_encoders(self.output_frame, encoders)
-        encoded_inputs = np.array(encode(supervised["inputs"], encoders))
-        encoded_outputs = np.array(encode(supervised["outputs"], encoders))
-
-        x_train, x_test, y_train, y_test = train_test_split(
-            encoded_inputs,
-            encoded_outputs,
-            test_size=self.percent / 100,
-            random_state=42)
         model = self.my_model
         epochs = self.number_epochs_entry.get()
         validation_split = self.validation_split_entry.get()
         if epochs is not None and validation_split is not None:
             epochs = int(epochs)
             validation_split = float(validation_split)
-            self.history = model.fit(x=x_train, y=y_train, epochs=epochs, validation_split=validation_split)
+            self.history = model.fit(x=self.x_train, y=self.y_train, epochs=epochs, validation_split=validation_split)
             self.final_modal = model
-            print(self.final_modal.history)
-
-
+            mas_i1 = []
+            mas_i2 = []
+            # todo: получить напрямую из модели, а не класса, кол-во слоев
+            for i in range(self.class_model.return_layers_count()):
+                mas_i1.append(i)
+                mas_i2.append(i)
+            self.Combobox_weights["values"] = mas_i1
+            self.Combobox_beises["values"] = mas_i2
 
 
 class My_Model():
     def __init__(self, network_types=None, layers_=None, loss=None, optimizer=None, metrics=None):
         self.model = network_types
+        self.layers = len(layers_)
         for elem in layers_:
             self.model.add(tf.keras.layers.Dense(units=elem[0], activation=elem[1]))
         self.model.compile(loss=loss, optimizer=optimizer, metrics=[metrics])
@@ -355,9 +418,8 @@ class My_Model():
     def return_model(self):
         return self.model
 
-
-
-
+    def return_layers_count(self):
+        return self.layers
 
 
 def dataframe_to_dict(df):
@@ -390,3 +452,21 @@ def encode(data, encoders):
                 vector.append(e)
         formatted.append(vector)
     return formatted
+
+class ScrollableFrame(ttk.Frame):
+    def __init__(self, container, *args, **kwargs):
+        super().__init__(container, *args, **kwargs)
+        canvas = Canvas(self)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = ttk.Frame(canvas)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
